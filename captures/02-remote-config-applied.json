@@ -1,0 +1,13 @@
+{
+ "desired_revision_id": "rev-20261126T095401Z-2606fa64",
+ "config_map_keys": [
+  "falco.yaml",
+  "rules.yaml"
+ ],
+ "note": "two-object push (falco.yaml + rules.yaml, content_type application/yaml) APPLIED via real falco reload",
+ "remote_config_status": {
+  "status": "RemoteConfigStatuses_APPLIED",
+  "last_remote_config_hash": "8f2db973a485a6b326852deba5c789aaeb256183d926f6ebb12ec109693316fc",
+  "error": null
+ }
+}

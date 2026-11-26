@@ -1,0 +1,10 @@
+{
+ "note": "withdrawal probe: DELETE /agent/{id}/config pushes an empty config_map; the bridge fails it (render: empty config_map), the revision is marked poisoned, and no rollback occurs - the last-known-good (the applied push) keeps running. falco-opamp instead restored its startup snapshot. Deferred bridge gap (needs startup snapshot + withdrawal path); recorded here, not fixed this stage.",
+ "remote_config_status": {
+  "status": "RemoteConfigStatuses_FAILED",
+  "last_remote_config_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 (sha256 of empty string)",
+  "error": "render: empty config_map"
+ },
+ "desired": "poisoned",
+ "disk_after": "LKG (applied two-object push) still on disk, falco keeps running it, no reload triggered"
+}

@@ -1,0 +1,34 @@
+{
+ "instance_uid": "4963d25865819c79ab4ba61fc7d021b9",
+ "agent_type": "falco",
+ "capabilities": 6151,
+ "healthy": true,
+ "health_status": "{\"status\": \"ok\"}",
+ "health_error": null,
+ "report_interval_seconds": 9.747,
+ "description": {
+  "identifyingAttributes": [
+   {
+    "key": "service.name",
+    "value": {
+     "stringValue": "falco"
+    }
+   },
+   {
+    "key": "falco.version",
+    "value": {
+     "stringValue": "0.45.2"
+    }
+   }
+  ],
+  "nonIdentifyingAttributes": [
+   {
+    "key": "falco.version",
+    "value": {
+     "stringValue": "0.45.2"
+    }
+   }
+  ]
+ },
+ "note": "GET /agent/{id} after real apply; falco profile identity match (agent_type=falco) driven by service.name=falco; health status carries the trimmed /healthz body {\"status\": \"ok\"}"
+}

@@ -1,0 +1,11 @@
+{
+ "pushed": {
+  "rules.yaml": "# stage 3: deliberately invalid - unknown field in condition\n- rule: Opamp Stage3 Broken\n  desc: this rule must be rejected by falco\n  condition: not_a_real_field = 1\n  output: \"should never fire\"\n  priority: WARNING\n"
+ },
+ "remote_config_status": {
+  "status": "RemoteConfigStatuses_FAILED",
+  "error": "falco rejected the pushed config (it keeps running the previous one); the load error is in falco's log output (rolled back to last-known-good)"
+ },
+ "falco_log": "Critical Falco internal: hot restart failure: /etc/falco/opamp/rules.yaml: Invalid",
+ "disk_after": "LKG (good rules) restored at /etc/falco/opamp/rules.yaml; verified in-container"
+}

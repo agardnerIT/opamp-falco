@@ -64,20 +64,48 @@ Bootstrap Falco once (see the server's falco profile snippet): enable
 `rules_files`, and run Falco with `watch_config_files: false` so the reload
 with feedback is the only reload.
 
+## Conformance (2026-11-26, live Falco 0.45.2 in Docker)
+
+Verified against a real `falcosecurity/falco:latest` (0.45.2, linux/arm64)
+running in the Docker Desktop VM with the `nodriver` engine — the config
+plane (webserver + reload-control socket + generation polling) is fully
+live; only syscall detection (irrelevant to config management) is off.
+The composed bridge + driver drove it through the opamp-server-py falco
+profile (16 profile tests pass unchanged). Every claim below has a capture
+in `captures/` or a Falco-side log line:
+
+| Seam | Result | Evidence |
+|---|---|---|
+| Enroll/identity | `agent_type: falco`; `service.name: falco`, `falco.version: 0.45.2` | `captures/01-enroll-description.json` |
+| Good rules push | `APPLIED` — real `POST /reload`, generation polling confirmed | `captures/02`-family; Falco log `Starting reload control` |
+| Bad rules push | `FAILED` with rollback reason; LKG (good rules) restored on disk; Falco keeps running the previous config; load error only in Falco's logs (`hot restart failure: ... Invalid`) | `captures/03-remote-config-failed-rollback.json` |
+| Two-object push (`falco.yaml` + `rules.yaml`) | `APPLIED` — both objects written, one reload (B1 fix proven end-to-end) | `captures/02-remote-config-applied.json` |
+| Health | `/healthz` body reported as health status (`{"status": "ok"}`) | `captures/01` |
+| RESTART command | Refused server-side: `AcceptsRestartCommand` not set (caps 6151) | `captures/04-restart-refused.json` |
+| Reconnect re-apply | One re-apply per process start, then `APPLIED`; profile-tolerant | Falco log reload count 7→8 |
+| Withdrawal (empty config_map) | **Gap, see below** | `captures/05-withdrawal-probe.json` |
+
+Withdrawal probe: the server's `DELETE /agent/{id}/config` pushes an empty
+config_map; the bridge fails it (`render: empty config_map`), the revision
+is marked poisoned, and no rollback occurs — the applied config keeps
+running. falco-opamp instead restored its startup snapshot. This is the
+documented deferred bridge gap (withdrawal needs the *startup* snapshot,
+not the per-push LKG); it is a bridge-side fix with a written reason, not a
+driver change. Same-hash pushes after a failure are skipped silently
+(no status report), which can leave the server's status view stale —
+also a bridge-side finding, recorded in the stage notes.
+
 ## Honest limitations
 
-- **Apply is Linux-only in practice.** Falco's kernel driver needs Linux.
-  The driver itself only needs Falco's webserver and reload-control socket,
-  both of which run wherever Falco runs. This port was developed on macOS
-  with no Falco binary available: the falco client is covered by its
-  verbatim test suite (a fake reload-control listener with the real
-  generation model), and the apply path is additionally exercised by
-  falco-opamp's capture procedure against a real Falco 0.45.2 — but the
-  composed bridge + driver has not yet been confirmed against a live Falco.
-  Until a Linux run does that, treat apply as "not green for real".
+- **Verified under the `nodriver` engine.** The apply/verify path is
+  confirmed against a live Falco 0.45.2 (Docker Desktop VM, linux/arm64):
+  real reload-control socket, real generation polling, real rejections.
+  Falco's kernel syscall detection is not exercised (needs a real Linux
+  host with eBPF/kmod); it does not participate in config management.
 - **Reconnect re-applies once per process start.** The applied-config hash is
   in memory, not persisted, so after a restart the server's config is applied
-  once more (a no-op reload for an unchanged config).
+  once more (a no-op reload for an unchanged config). Verified live and
+  tolerated by the profile.
 - **Capabilities differ from falco-opamp's.** falco-opamp advertised 2055;
   the bridge advertises 6151 — the RESTART/packages bits were off in both,
   and the bridge adds `ReportsRemoteConfig`. Same surfaces, stated plainly.

@@ -1,0 +1,7 @@
+{
+ "detail": {
+  "message": "agent 4963d25865819c79ab4ba61fc7d021b9 does not accept restart commands (AgentCapabilities_AcceptsRestartCommand is not set)",
+  "hint": "set `accepts_restart_command: true` on the collector's `opamp` extension and restart it once; upstream defaults this to false",
+  "capabilities": 6151
+ }
+}
