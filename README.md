@@ -21,7 +21,8 @@ write files  ->  POST /reload (Unix socket)  ->  poll GET /reload  ->  report AP
 
 That is the deleted-lines arithmetic against
 [github.com/agardnerIT/falco-opamp](https://github.com/agardnerIT/falco-opamp)
-(957 lines, frozen at `3e8b859`): **270** lines of product protocol kept
+(957 lines, code frozen at `3e8b859`; the final commit `d41afa5` is the
+archive banner): **270** lines of product protocol kept
 verbatim, **344** lines of OpAMP transport deleted (the bridge does it, once,
 for every product), **192** lines of config store deleted (the bridge owns
 artifact writes and last-known-good rollback), and the **151**-line `main.go`
@@ -63,6 +64,54 @@ Bootstrap Falco once (see the server's falco profile snippet): enable
 `webserver` and `reload_control`, add the managed rules file to
 `rules_files`, and run Falco with `watch_config_files: false` so the reload
 with feedback is the only reload.
+
+## Migrating from falco-opamp
+
+`falco-opamp` is frozen (archived, README banner) and superseded by this
+repo. Everything product-specific is the same code: `falco/client.go` was
+ported verbatim, so the reload/verify behaviour you tested does not change.
+What changes is the process you run.
+
+**Flags.** Two renamed, two gone, the rest identical:
+
+| falco-opamp | opamp-falco |
+|---|---|
+| `--endpoint http://host:4320/v1/opamp` | `--server http://host:4320/v1/opamp` (default `ws://127.0.0.1:4320/v1/opamp`; scheme still picks transport) |
+| `--header 'Authorization: Bearer <token>'` (repeatable) | `--token <token>` (or env `OPAMP_TOKEN`) |
+| `--config`, `--rules`, `--control-socket`, `--webserver`, `--falco-bin`, `--require-reload-control` | unchanged, same defaults |
+| `--state-interval` | gone — the bridge reports health on its own schedule |
+| `--heartbeat` | gone — the bridge owns the OpAMP connection heartbeat (30s) |
+| `--instance-uid-file` | still there, but see identity below |
+
+**Identity changes once.** falco-opamp persisted a 36-character UUID; the
+bridge persists 16 raw bytes and defaults to `./instance.uid` (falco-opamp's
+default was ephemeral, so most users passed the flag). A falco-opamp uid
+file is not readable by the bridge: on first start `opamp-falco` mints a new
+uid, the server registers a **new agent**, and the old record goes stale
+until the server's reaper removes it. Expect that once, not per restart. Pin
+the uid with `--instance-uid-file /var/lib/opamp/instance.uid` and mount it
+persistently, or every sidecar restart is a new agent.
+
+**Container/Kubernetes recipe.** Only the binary name changes — same image
+runtime, same mounts, same socket arrangement:
+
+```diff
+- command: ["falco-opamp", "--endpoint", "http://opamp:4320/v1/opamp",
+-           "--header", "Authorization: Bearer $(TOKEN)", ...]
++ command: ["opamp-falco", "--server", "http://opamp:4320/v1/opamp",
++           "--token", "$(TOKEN)", ...]
+```
+
+The socket directory (`/run/falco`, mode `0700`, Falco's uid) is unchanged —
+still a dedicated `emptyDir` shared with Falco only. The owned-file paths
+must keep matching Falco's actual `config_file` and `rules_files`.
+
+**Capabilities.** falco-opamp advertised bitmask 2055, the bridge advertises
+6151 (adds `ReportsRemoteConfig`). RESTART and packages stay off in both, so
+no server-side behaviour you relied on disappears.
+
+No migration tooling exists or is planned; the swap is a flag edit plus one
+expected re-registration.
 
 ## Conformance (2026-11-26, live Falco 0.45.2 in Docker)
 
