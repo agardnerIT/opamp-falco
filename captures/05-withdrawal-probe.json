@@ -1,10 +1,10 @@
 {
- "note": "withdrawal probe: DELETE /agent/{id}/config pushes an empty config_map; the bridge fails it (render: empty config_map), the revision is marked poisoned, and no rollback occurs - the last-known-good (the applied push) keeps running. falco-opamp instead restored its startup snapshot. Deferred bridge gap (needs startup snapshot + withdrawal path); recorded here, not fixed this stage.",
+ "note": "withdrawal after bridge v0.4.0: DELETE /agent/{id}/config pushes an empty config_map; the bridge restores its STARTUP snapshot through the same write-validate-apply-verify pipeline (real POST /reload, generation polling), removes files that were absent at startup, and reports APPLIED. The revision stays deliverable (not poisoned). Verified live against falco 0.45.2: reload count advanced, disk restored to the pre-agent content.",
+ "before_v040": "render: empty config_map -> FAILED -> revision poisoned; pushed config kept running",
  "remote_config_status": {
-  "status": "RemoteConfigStatuses_FAILED",
-  "last_remote_config_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 (sha256 of empty string)",
-  "error": "render: empty config_map"
+  "status": "RemoteConfigStatuses_APPLIED",
+  "last_remote_config_hash": "606a2387989542cbaaf73b0ada682900f833321638ab1675dabc8f2bac7f5896",
+  "error": null
  },
- "desired": "poisoned",
- "disk_after": "LKG (applied two-object push) still on disk, falco keeps running it, no reload triggered"
+ "disk_after": "startup-snapshot rules restored (pre-agent content), falco reloaded it"
 }

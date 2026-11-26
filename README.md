@@ -83,17 +83,18 @@ in `captures/` or a Falco-side log line:
 | Health | `/healthz` body reported as health status (`{"status": "ok"}`) | `captures/01` |
 | RESTART command | Refused server-side: `AcceptsRestartCommand` not set (caps 6151) | `captures/04-restart-refused.json` |
 | Reconnect re-apply | One re-apply per process start, then `APPLIED`; profile-tolerant | Falco log reload count 7→8 |
-| Withdrawal (empty config_map) | **Gap, see below** | `captures/05-withdrawal-probe.json` |
+| Withdrawal (empty config_map) | `APPLIED` — startup snapshot restored through the real reload; revision stays deliverable (bridge v0.4.0) | `captures/05-withdrawal-probe.json` |
 
 Withdrawal probe: the server's `DELETE /agent/{id}/config` pushes an empty
-config_map; the bridge fails it (`render: empty config_map`), the revision
-is marked poisoned, and no rollback occurs — the applied config keeps
-running. falco-opamp instead restored its startup snapshot. This is the
-documented deferred bridge gap (withdrawal needs the *startup* snapshot,
-not the per-push LKG); it is a bridge-side fix with a written reason, not a
-driver change. Same-hash pushes after a failure are skipped silently
-(no status report), which can leave the server's status view stale —
-also a bridge-side finding, recorded in the stage notes.
+config_map; on bridge v0.4.0 the bridge restores the **startup snapshot**
+(the files as the agent found them) through the same write → validate →
+apply → verify pipeline — a real reload, so the product actually goes back
+to its pre-agent configuration — removes files that were absent at
+startup, and reports APPLIED. (Before v0.4.0 this failed with
+`render: empty config_map`, the revision got poisoned, and the pushed
+config kept running — see the stage notes.) The same-hash dedupe also
+reports APPLIED on skip now, so a re-pushed already-applied config can no
+longer leave the server's status view stale.
 
 ## Honest limitations
 
