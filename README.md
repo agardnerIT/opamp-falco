@@ -16,7 +16,7 @@ write files  ->  POST /reload (Unix socket)  ->  poll GET /reload  ->  report AP
 |---|---|---|
 | `falco/client.go` | 270 | falco-opamp `internal/falco/client.go`, **verbatim** (one comment reflowed by gofmt; no code change) |
 | `falco/client_test.go` | 182 | falco-opamp, verbatim |
-| `driver.go` | ~190 | new: the six-verb mapping (below) |
+| `driver.go` | 223 | new: the six-verb mapping (below) |
 | `main.go` | ~60 | new: flags + `bridge.Run` |
 
 That is the deleted-lines arithmetic against
@@ -25,7 +25,7 @@ That is the deleted-lines arithmetic against
 verbatim, **344** lines of OpAMP transport deleted (the bridge does it, once,
 for every product), **192** lines of config store deleted (the bridge owns
 artifact writes and last-known-good rollback), and the **151**-line `main.go`
-collapsed to ~60 lines of flags. Total new product code: ~250 lines.
+collapsed to 60 lines of flags. Total new product code: ~280 lines.
 
 ## The contract
 
